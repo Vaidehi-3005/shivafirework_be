@@ -61,12 +61,20 @@ const getById = async (req, res) => {
 const update = async (req, res) => {
     try {
         const { name, price, type } = req.body;
+        const productId = req.params.id;
 
-        const updatedItem = await FirecrackerService.update(req.params.id, {
+        const updateData = {
             name,
-            price: price ? Number(price) : undefined,
+            price: price !== undefined && price !== '' ? Number(price) : undefined,
             type
-        });
+        };
+
+        // If a file passed validation, set img path to uploads/{id}.webp
+        if (req.file) {
+            updateData.img = `uploads/${productId}.webp`;
+        }
+
+        const updatedItem = await FirecrackerService.update(productId, updateData);
 
         if (!updatedItem) return res.status(404).json({ success: false, message: 'Not found' });
         res.json({ success: true, data: updatedItem });
