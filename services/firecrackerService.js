@@ -3,12 +3,12 @@ const xlsx = require('xlsx');
 const fs = require('fs');
 
 const create = async (data) => {
-    const { name, qty, price, type } = data;
+    const { name, price, type } = data;
     
     // 1. Insert item initially with empty string for img to prevent strict MySQL mode errors
     const [result] = await db.query(
-        'INSERT INTO firecrackers (name, qty, price, type, img) VALUES (?, ?, ?, ?, ?)',
-        [name, qty, price, type, '']
+        'INSERT INTO firecrackers (name, price, type, img) VALUES (?, ?, ?, ?)',
+        [name, price, type, '']
     );
 
     const newId = result.insertId;
@@ -17,7 +17,7 @@ const create = async (data) => {
     // 2. Update record with the generated route uploads/{id}.webp
     await db.query('UPDATE firecrackers SET img = ? WHERE id = ?', [imgPath, newId]);
 
-    return { id: newId, name, qty, price, type, img: imgPath };
+    return { id: newId, name, price, type, img: imgPath };
 };
 
 const bulkUploadFromExcel = async (filePath) => {
@@ -31,17 +31,15 @@ const bulkUploadFromExcel = async (filePath) => {
 
     for (const [idx, row] of rows.entries()) {
         const name = row.name || row.Name;
-        const qty = row.qty !== undefined ? row.qty : row.Qty;
         const price = row.price !== undefined ? row.price : row.Price;
         const type = row.type || row.Type;
 
-        if (!name || qty === undefined || price === undefined || !type) {
-            throw new Error(`Row ${idx + 2} in Excel has missing fields. name, qty, price, and type are required.`);
+        if (!name || price === undefined || !type) {
+            throw new Error(`Row ${idx + 2} in Excel has missing fields. name, price, and type are required.`);
         }
 
         await create({
             name,
-            qty: parseInt(qty, 10),
             price: parseFloat(price),
             type
         });
@@ -68,7 +66,6 @@ const update = async (id, data) => {
     const values = [];
 
     if (data.name) { fields.push('name = ?'); values.push(data.name); }
-    if (data.qty !== undefined) { fields.push('qty = ?'); values.push(data.qty); }
     if (data.price !== undefined) { fields.push('price = ?'); values.push(data.price); }
     if (data.type) { fields.push('type = ?'); values.push(data.type); }
     if (data.img) { fields.push('img = ?'); values.push(data.img); }

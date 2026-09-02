@@ -2,13 +2,10 @@ const FirecrackerService = require('../services/firecrackerService');
 
 const createSingle = async (req, res) => {
     try {
-        const { name, qty, price, type } = req.body;
+        const { name, price, type } = req.body;
 
         if (!name || name.trim() === '') {
             return res.status(400).json({ success: false, message: 'Name is required' });
-        }
-        if (qty === undefined || qty === null || qty === '' || Number(qty) < 0) {
-            return res.status(400).json({ success: false, message: 'Valid positive Qty is required' });
         }
         if (price === undefined || price === null || price === '' || Number(price) < 0) {
             return res.status(400).json({ success: false, message: 'Valid positive Price is required' });
@@ -19,7 +16,6 @@ const createSingle = async (req, res) => {
 
         const newItem = await FirecrackerService.create({ 
             name, 
-            qty: Number(qty), 
             price: Number(price), 
             type 
         });
@@ -64,11 +60,10 @@ const getById = async (req, res) => {
 
 const update = async (req, res) => {
     try {
-        const { name, qty, price, type } = req.body;
+        const { name, price, type } = req.body;
 
         const updatedItem = await FirecrackerService.update(req.params.id, {
             name,
-            qty: qty ? Number(qty) : undefined,
             price: price ? Number(price) : undefined,
             type
         });
