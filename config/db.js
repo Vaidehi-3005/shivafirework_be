@@ -4,7 +4,7 @@ require('dotenv').config();
 // Log database configuration parameters (hiding password)
 console.log('--- [DB SETUP] Initializing connection pool ---');
 console.log(`DB Host: ${process.env.DB_HOST}`);
-console.log(`DB Port: ${process.env.DB_PORT || 3306}`);
+console.log(`DB Port: ${process.env.DB_PORT}`);
 console.log(`DB User: ${process.env.DB_USER}`);
 console.log(`DB Name: ${process.env.DB_NAME}`);
 
