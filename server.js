@@ -37,7 +37,11 @@ app.use((req, res, next) => {
 });
 
 // Serve uploaded images statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded images statically with 1-year browser caching
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '1y',
+    immutable: true
+}));
 
 // Mount routes
 app.use('/api/auth', authRoutes);
