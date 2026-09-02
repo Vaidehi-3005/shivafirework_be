@@ -2,8 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-
 const cookieParser = require('cookie-parser');
+
+// Import database to trigger immediate connection verification
+const pool = require('./config/db'); 
 
 // Import routes
 const firecrackerRoutes = require('./routes/firecrackerRoute');
@@ -20,13 +22,16 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 🔍 Debug Middleware: Log incoming auth token before routes handle it
-app.use('/api/firecrackers', (req, res, next) => {
-    console.log('--- [SERVER.JS] INCOMING REQUEST ---');
-    console.log('Method:', req.method);
-    console.log('Headers Auth:', req.headers.authorization);
-    console.log('Query Token:', req.query.token);
-    console.log('Cookies:', req.cookies);
+// Detailed Request Logging Middleware (Applies to ALL routes)
+app.use((req, res, next) => {
+    console.log(`\n--- [INCOMING REQUEST] [${new Date().toISOString()}] ---`);
+    console.log(`Method: ${req.method} | URL: ${req.originalUrl}`);
+    console.log('Headers Auth:', req.headers.authorization || 'None');
+    console.log('Query Token:', req.query.token || 'None');
+    console.log('Cookies:', Object.keys(req.cookies || {}).length ? req.cookies : 'None');
+    if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+        console.log('Request Body:', JSON.stringify(req.body, null, 2));
+    }
     next();
 });
 
@@ -37,12 +42,27 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/firecrackers', firecrackerRoutes);
 
+// Global 500 Error Catching Middleware (Captures uncaught controller errors)
+app.use((err, req, res, next) => {
+    console.error('\n --- [SERVER 500 ERROR CAUGHT] ---');
+    console.error(`Route: ${req.method} ${req.originalUrl}`);
+    console.error('Error Message:', err.message);
+    console.error('Stack Trace:\n', err.stack);
+    console.error('------------------------------------\n');
+
+    res.status(500).json({
+        success: false,
+        message: 'Internal Server Error',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, (err) => {
     if (err) {
-        console.error(`Failed to start server: ${err.message}`);
+        console.error(` [SERVER START FAILED]: ${err.message}`);
         process.exit(1);
     }
-    console.log(`Server running on port ${PORT}`);
+    console.log(`[SERVER RUNNING]: Listening on http://localhost:${PORT}`);
 });
