@@ -2,13 +2,10 @@ const FirecrackerService = require('../services/firecrackerService');
 
 const createSingle = async (req, res) => {
     try {
-        const { name, qty, price, type } = req.body;
+        const { name, price, type } = req.body;
 
         if (!name || name.trim() === '') {
             return res.status(400).json({ success: false, message: 'Name is required' });
-        }
-        if (qty === undefined || qty === null || qty === '' || Number(qty) < 0) {
-            return res.status(400).json({ success: false, message: 'Valid positive Qty is required' });
         }
         if (price === undefined || price === null || price === '' || Number(price) < 0) {
             return res.status(400).json({ success: false, message: 'Valid positive Price is required' });
@@ -19,7 +16,6 @@ const createSingle = async (req, res) => {
 
         const newItem = await FirecrackerService.create({ 
             name, 
-            qty: Number(qty), 
             price: Number(price), 
             type 
         });
@@ -64,14 +60,21 @@ const getById = async (req, res) => {
 
 const update = async (req, res) => {
     try {
-        const { name, qty, price, type } = req.body;
+        const { name, price, type } = req.body;
+        const productId = req.params.id;
 
-        const updatedItem = await FirecrackerService.update(req.params.id, {
+        const updateData = {
             name,
-            qty: qty ? Number(qty) : undefined,
-            price: price ? Number(price) : undefined,
+            price: price !== undefined && price !== '' ? Number(price) : undefined,
             type
-        });
+        };
+
+        // If a file passed validation, set img path to uploads/{id}.webp
+        if (req.file) {
+            updateData.img = `uploads/${productId}.webp`;
+        }
+
+        const updatedItem = await FirecrackerService.update(productId, updateData);
 
         if (!updatedItem) return res.status(404).json({ success: false, message: 'Not found' });
         res.json({ success: true, data: updatedItem });

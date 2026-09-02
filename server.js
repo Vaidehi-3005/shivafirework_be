@@ -9,6 +9,7 @@ const pool = require('./config/db');
 
 // Import routes
 const firecrackerRoutes = require('./routes/firecrackerRoute');
+const orderRoutes = require('./routes/orderRoute');
 const authRoutes = require('./routes/authRoutes');
 
 const app = express();
@@ -41,6 +42,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/firecrackers', firecrackerRoutes);
+app.use('/api/firecrackers/orders', orderRoutes);
 
 // Global 500 Error Catching Middleware (Captures uncaught controller errors)
 app.use((err, req, res, next) => {

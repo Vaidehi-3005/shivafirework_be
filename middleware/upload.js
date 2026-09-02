@@ -10,23 +10,6 @@ const excelDir = 'uploads/excel';
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// Helper function to calculate the next sequence number based on existing files
-const getNextSequenceNumber = (directory) => {
-    const files = fs.readdirSync(directory);
-    let maxNum = 0;
-
-    files.forEach(file => {
-        // Extract number from filenames like "1.webp", "2.webp", etc.
-        const match = file.match(/^(\d+)\.webp$/i);
-        if (match) {
-            const num = parseInt(match[1], 10);
-            if (num > maxNum) maxNum = num;
-        }
-    });
-
-    return maxNum + 1;
-};
-
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (file.fieldname === 'excel') {
@@ -37,11 +20,9 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         if (file.fieldname === 'img') {
-            // Get next sequential number (e.g., if max is 5, next is 6)
-            const nextNum = getNextSequenceNumber(imgDir);
-            cb(null, `${nextNum}.webp`);
+            // Save as lowercase filename (e.g., "2.webp")
+            cb(null, file.originalname.toLowerCase());
         } else {
-            // Standard timestamp naming for Excel files
             const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
             cb(null, uniqueSuffix + path.extname(file.originalname));
         }
@@ -53,20 +34,30 @@ const fileFilter = (req, file, cb) => {
         const ext = path.extname(file.originalname).toLowerCase();
         const mime = file.mimetype.toLowerCase();
 
-        // STRICT: Only allow .webp extension AND image/webp MIME type
-        const isWebp = ext === '.webp' && mime === 'image/webp';
-
-        if (isWebp) {
-            return cb(null, true);
+        // STRICT CHECK 1: Extension must be .webp AND MIME type must be image/webp
+        if (ext !== '.webp' || mime !== 'image/webp') {
+            return cb(new Error('Strict Validation Failed: Only .webp image files are allowed!'));
         }
-        return cb(new Error('Strict Validation Failed: Only .webp image files are allowed!'));
+
+        // STRICT CHECK 2: Filename must match the product ID (e.g., 2.webp)
+        const productId = req.params?.id;
+        if (productId) {
+            const expectedFileName = `${productId}.webp`.toLowerCase();
+            const actualFileName = file.originalname.toLowerCase();
+
+            if (actualFileName !== expectedFileName) {
+                return cb(new Error(`Please rename your image file to "${expectedFileName}" before uploading.`));
+            }
+        }
+
+        return cb(null, true);
     } else if (file.fieldname === 'excel') {
         const allowedTypes = /xlsx|xls|csv/;
         const ext = path.extname(file.originalname).toLowerCase();
         if (allowedTypes.test(ext)) return cb(null, true);
         cb(new Error('Only Excel files (.xlsx, .xls, .csv) are allowed!'));
     } else {
-        cb(null, true);
+        cb(new Error('Unexpected file field!'));
     }
 };
 
